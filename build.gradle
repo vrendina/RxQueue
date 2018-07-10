@@ -1,0 +1,16 @@
+apply plugin: "java"
+
+group GROUP
+version VERSION_NAME
+
+sourceCompatibility = 1.7
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "com.jakewharton.rxrelay2:rxrelay:2.0.0"
+    testImplementation "junit:junit:4.12"
+    testImplementation "org.mockito:mockito-core:2.19.0"
+}
