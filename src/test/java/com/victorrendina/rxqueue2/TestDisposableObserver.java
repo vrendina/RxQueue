@@ -17,7 +17,10 @@ package com.victorrendina.rxqueue2;
 import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
 
-public class TestObserver implements Observer<Object> {
+/**
+ * Observer that keeps a reference to the disposable interface when subscribing.
+ */
+public class TestDisposableObserver implements Observer<Object> {
     Disposable d;
 
     @Override

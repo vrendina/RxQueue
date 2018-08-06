@@ -17,9 +17,13 @@ package com.victorrendina.rxqueue2;
 import io.reactivex.Observer;
 import io.reactivex.functions.Consumer;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import static org.mockito.Mockito.mock;
 
-public class TestHelper {
+class TestHelper {
 
     /**
      * Mocks an Observer with the proper receiver type.
@@ -28,7 +32,7 @@ public class TestHelper {
      * @return the mocked observer
      */
     @SuppressWarnings("unchecked")
-    public static <T> Observer<T> mockObserver() {
+    static <T> Observer<T> mockObserver() {
         return mock(Observer.class);
     }
 
@@ -39,8 +43,44 @@ public class TestHelper {
      * @return the mocked consumer
      */
     @SuppressWarnings("unchecked")
-    public static <T> Consumer<T> mockConsumer() {
+    static <T> Consumer<T> mockConsumer() {
         return mock(Consumer.class);
     }
 
+    /**
+     * Simulate a race condition by queueing up a list of on separate threads and then starting
+     * them all simultaneously by releasing a latch.
+     *
+     * @param runnables varargs runnables to execute simultaneously
+     */
+    static void race(Runnable... runnables) {
+        final ExecutorService executor = Executors.newFixedThreadPool(runnables.length);
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        for (Runnable runnable : runnables) {
+            executor.submit(awaitRunnable(runnable, latch));
+        }
+        latch.countDown();
+    }
+
+    /**
+     * Convenience method to wrap a runnable with a latch await method.
+     *
+     * @param runnable runnable to execute after latch done waiting
+     * @param latch    latch to await
+     * @return runnable that will wait for latch
+     */
+    private static Runnable awaitRunnable(final Runnable runnable, final CountDownLatch latch) {
+        return new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    latch.await();
+                    runnable.run();
+                } catch (Exception e) {
+                    throw new AssertionError(e);
+                }
+            }
+        };
+    }
 }

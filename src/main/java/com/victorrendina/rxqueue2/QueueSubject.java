@@ -14,9 +14,10 @@
 
 package com.victorrendina.rxqueue2;
 
-import com.jakewharton.rxrelay2.Relay;
 import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.plugins.RxJavaPlugins;
+import io.reactivex.subjects.Subject;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -25,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Relay that has a maximum of one simultaneous observer and queues items to be emitted if no observer is subscribed.
+ * Subject that has a maximum of one simultaneous observer and queues items to be emitted if no observer is subscribed.
  * Once a subscriber is connected all items in the queue will be drained to that subscriber unless the subscriber is
  * disposed or another subscriber takes its place. Adding a subscriber while a subscription is active will dispose of
  * the first subscriber and any existing events in the queue will be forwarded to the second subscriber.
@@ -35,69 +36,60 @@ import java.util.concurrent.atomic.AtomicReference;
  * <pre> {@code
  *
  * // observer will receive all events
- * QueueRelay<Object> relay = QueueRelay.createDefault("initial");
- * relay.accept("one");
- * relay.accept("two");
- * relay.subscribe(observer);
- * relay.accept("three");
+ * QueueSubject<Object> subject = QueueSubject.createDefault("initial");
+ * subject.onNext("one");
+ * subject.onNext("two");
+ * subject.subscribe(observer);
+ * subject.onNext("three");
  *
  * // first observer will receive initial event, second observer all subsequent events
- * QueueRelay<Object> relay = QueueRelay.createDefault("initial");
- * relay.subscribe(firstObserver);
- * relay.subscribe(secondObserver);
- * relay.accept("one");
- * relay.accept("two");
+ * QueueSubject<Object> subject = QueueSubject.createDefault("initial");
+ * subject.subscribe(firstObserver);
+ * subject.subscribe(secondObserver);
+ * subject.onNext("one");
+ * subject.onNext("two");
  *
  * } </pre>
  *
  * @param <T> the type of item expected to be observed
  */
-public class QueueRelay<T> extends Relay<T> {
+public class QueueSubject<T> extends Subject<T> {
 
     private final Queue<T> queue = new ConcurrentLinkedQueue<>();
     private final AtomicReference<QueueDisposable<T>> subscriber = new AtomicReference<>();
 
     private final Object lock = new Object();
 
+    private Throwable error;
+    private volatile boolean done;
+
     /**
-     * Creates a {@link QueueRelay} without any initial items.
+     * Creates a {@link QueueSubject} without any initial items.
      *
      * @param <T> type of items emitted by the relay
-     * @return the constructed {@link QueueRelay}
+     * @return the constructed {@link QueueSubject}
      */
-    public static <T> QueueRelay<T> create() {
-        return new QueueRelay<>();
+    public static <T> QueueSubject<T> create() {
+        return new QueueSubject<>();
     }
 
     /**
-     * Creates a {@link QueueRelay} with the given initial items.
+     * Creates a {@link QueueSubject} with the given initial items.
      *
      * @param initialItems varargs initial items in the queue
      * @param <T>          type of items emitted by the relay
-     * @return the constructed {@link QueueRelay}
+     * @return the constructed {@link QueueSubject}
      */
     @SafeVarargs
-    public static <T> QueueRelay<T> createDefault(T... initialItems) {
-        return new QueueRelay<>(initialItems);
+    public static <T> QueueSubject<T> createDefault(T... initialItems) {
+        return new QueueSubject<>(initialItems);
     }
 
     @SafeVarargs
-    private QueueRelay(T... initialItems) {
+    private QueueSubject(T... initialItems) {
         for (T item : initialItems) {
             if (item == null) throw new NullPointerException("item == null");
             queue.offer(item);
-        }
-    }
-
-    @Override
-    public void accept(T value) {
-        if (value == null) throw new NullPointerException("value == null");
-
-        queue.offer(value);
-
-        QueueDisposable<T> qs = subscriber.get();
-        if (qs != null && !qs.isDisposed()) {
-            qs.drain(queue);
         }
     }
 
@@ -107,11 +99,98 @@ public class QueueRelay<T> extends Relay<T> {
     }
 
     @Override
+    public boolean hasThrowable() {
+        return done && error != null;
+    }
+
+    @Override
+    public boolean hasComplete() {
+        return done && error == null;
+    }
+
+    @Override
+    public Throwable getThrowable() {
+        if (done) {
+            return error;
+        }
+        return null;
+    }
+
+    @Override
     protected void subscribeActual(Observer<? super T> observer) {
         QueueDisposable<T> qs = new QueueDisposable<>(observer, this);
         observer.onSubscribe(qs);
-        set(qs);
-        qs.drain(queue);
+        if (!done) {
+            set(qs);
+            qs.drain(queue);
+        } else {
+            Throwable ex = error;
+            if (ex != null) {
+                qs.onError(ex);
+            } else {
+                qs.onComplete();
+            }
+        }
+    }
+
+    @Override
+    public void onSubscribe(Disposable d) {
+        if (done) {
+            d.dispose();
+        }
+    }
+
+    @Override
+    public void onNext(T value) {
+        if (value == null) {
+            onError(new NullPointerException("value == null"));
+            return;
+        }
+        if (done) {
+            return;
+        }
+
+        queue.add(value);
+
+        QueueDisposable<T> qs = subscriber.get();
+        if (qs != null && !qs.isDisposed()) {
+            qs.drain(queue);
+        }
+    }
+
+    @Override
+    public void onError(Throwable e) {
+        if (done) {
+            RxJavaPlugins.onError(e);
+            return;
+        }
+
+        if (e == null) {
+            e = new NullPointerException("onError called with null. Null values are generally not allowed in 2.x operators and sources.");
+        }
+
+        error = e;
+        done = true;
+
+        QueueDisposable<T> qs = subscriber.get();
+        if (qs != null) {
+            qs.drain(queue);
+            qs.onError(e);
+        }
+    }
+
+    @Override
+    public void onComplete() {
+        if (done) {
+            return;
+        }
+        done = true;
+
+        QueueDisposable<T> qs = subscriber.get();
+        if (qs != null) {
+            qs.drain(queue);
+            qs.onComplete();
+        }
     }
 
     private void set(QueueDisposable<T> qs) {
@@ -132,13 +211,27 @@ public class QueueRelay<T> extends Relay<T> {
     static final class QueueDisposable<T> extends AtomicInteger implements Disposable {
 
         final Observer<? super T> actual;
-        final QueueRelay<T> state;
+        final QueueSubject<T> state;
 
         final AtomicBoolean cancelled = new AtomicBoolean();
 
-        QueueDisposable(Observer<? super T> actual, QueueRelay<T> state) {
+        QueueDisposable(Observer<? super T> actual, QueueSubject<T> state) {
             this.actual = actual;
             this.state = state;
+        }
+
+        public void onError(Throwable e) {
+            if (cancelled.get()) {
+                RxJavaPlugins.onError(e);
+            } else {
+                actual.onError(e);
+            }
+        }
+
+        public void onComplete() {
+            if (!cancelled.get()) {
+                actual.onComplete();
+            }
         }
 
         @Override
