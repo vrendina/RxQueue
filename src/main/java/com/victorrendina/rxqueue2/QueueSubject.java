@@ -55,8 +55,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class QueueSubject<T> extends Subject<T> {
 
-    private final Queue<T> queue = new ConcurrentLinkedQueue<>();
-    private final AtomicReference<QueueDisposable<T>> subscriber = new AtomicReference<>();
+    private final Queue<T> queue = new ConcurrentLinkedQueue<T>();
+    private final AtomicReference<QueueDisposable<T>> subscriber = new AtomicReference<QueueDisposable<T>>();
 
     private final Object lock = new Object();
 
@@ -70,7 +70,8 @@ public class QueueSubject<T> extends Subject<T> {
      * @return the constructed {@link QueueSubject}
      */
     public static <T> QueueSubject<T> create() {
-        return new QueueSubject<>();
+        //noinspection unchecked
+        return new QueueSubject<T>();
     }
 
     /**
@@ -80,12 +81,10 @@ public class QueueSubject<T> extends Subject<T> {
      * @param <T>          type of items emitted by the relay
      * @return the constructed {@link QueueSubject}
      */
-    @SafeVarargs
     public static <T> QueueSubject<T> createDefault(T... initialItems) {
-        return new QueueSubject<>(initialItems);
+        return new QueueSubject<T>(initialItems);
     }
 
-    @SafeVarargs
     private QueueSubject(T... initialItems) {
         for (T item : initialItems) {
             if (item == null) throw new NullPointerException("item == null");
@@ -118,7 +117,7 @@ public class QueueSubject<T> extends Subject<T> {
 
     @Override
     protected void subscribeActual(Observer<? super T> observer) {
-        QueueDisposable<T> qs = new QueueDisposable<>(observer, this);
+        QueueDisposable<T> qs = new QueueDisposable<T>(observer, this);
         observer.onSubscribe(qs);
         if (!done) {
             set(qs);

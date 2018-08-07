@@ -129,7 +129,7 @@ public class QueueRelayTest {
             }
 
             final CountDownLatch latch = new CountDownLatch(items);
-            final ConcurrentLinkedQueue<Integer> emissions = new ConcurrentLinkedQueue<>();
+            final ConcurrentLinkedQueue<Integer> emissions = new ConcurrentLinkedQueue<Integer>();
 
             final Runnable runnable = new Runnable() {
                 @Override
