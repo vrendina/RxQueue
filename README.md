@@ -1,6 +1,9 @@
 RxQueue
 =======
 
+[![Build Status](https://travis-ci.org/vrendina/RxQueue.svg?branch=master)](https://travis-ci.org/vrendina/RxQueue)
+[![codecov](https://codecov.io/gh/vrendina/RxQueue/branch/master/graph/badge.svg)](https://codecov.io/gh/vrendina/RxQueue)
+
  RxQueue contains [RxJava][rx] subject and [relay][relay] types that queue items if no observer is subscribed.
  Once a subscriber attaches, items in the queue will be drained to that subscriber unless the subscriber is 
  disposed or another subscriber takes its place. If the queue is empty, the observer will continue to receive live events
