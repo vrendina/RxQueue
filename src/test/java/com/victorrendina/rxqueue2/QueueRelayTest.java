@@ -247,6 +247,47 @@ public class QueueRelayTest {
         }
     }
 
+    @Test(timeout = 2500)
+    public void slowConsumerReceivesAllEventsFromFasterProducer() {
+        final int items = 100;
+
+        final QueueRelay<Integer> relay = QueueRelay.create();
+        final CountDownLatch latch = new CountDownLatch(items);
+
+        final Thread emitter = new Thread() {
+            @Override
+            public void run() {
+                for (int i = 0; i < items; i++) {
+                    relay.accept(i);
+                    try {
+                        Thread.sleep(1);
+                    } catch (Exception e) {
+                        fail();
+                    }
+                }
+            }
+        };
+        emitter.start();
+
+        relay.subscribe(new Consumer<Integer>() {
+            @Override
+            public void accept(Integer integer) {
+                latch.countDown();
+                try {
+                    Thread.sleep(2);
+                } catch (Exception e) {
+                    fail();
+                }
+            }
+        });
+
+        try {
+            latch.await();
+        } catch (Exception e) {
+            fail();
+        }
+    }
+
     @Test
     public void innerDisposedWhenAnotherSubscribes() {
         final QueueRelay<Integer> relay = QueueRelay.create();
