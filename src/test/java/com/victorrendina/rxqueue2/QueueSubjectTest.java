@@ -553,6 +553,47 @@ public class QueueSubjectTest {
         }
     }
 
+    @Test(timeout = 5000)
+    public void slowConsumerReceivesAllEventsFromFasterProducer() {
+        final int items = 1000;
+
+        final QueueSubject<Integer> subject = QueueSubject.create();
+        final CountDownLatch latch = new CountDownLatch(items);
+
+        final Thread emitter = new Thread() {
+            @Override
+            public void run() {
+                for (int i = 0; i < items; i++) {
+                    subject.onNext(i);
+                    try {
+                        Thread.sleep(1);
+                    } catch (Exception e) {
+                        fail();
+                    }
+                }
+            }
+        };
+        emitter.start();
+
+        subject.subscribe(new Consumer<Integer>() {
+            @Override
+            public void accept(Integer integer) {
+                latch.countDown();
+                try {
+                    Thread.sleep(2);
+                } catch (Exception e) {
+                    fail();
+                }
+            }
+        });
+
+        try {
+            latch.await();
+        } catch (Exception e) {
+            fail();
+        }
+    }
+
     @Test
     public void queueContainsRightCountWhenWrittenFromMultipleThreads() {
         final int items = 50;

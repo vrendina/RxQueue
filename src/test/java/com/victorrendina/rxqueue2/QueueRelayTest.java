@@ -247,9 +247,9 @@ public class QueueRelayTest {
         }
     }
 
-    @Test(timeout = 2500)
+    @Test(timeout = 5000)
     public void slowConsumerReceivesAllEventsFromFasterProducer() {
-        final int items = 100;
+        final int items = 1000;
 
         final QueueRelay<Integer> relay = QueueRelay.create();
         final CountDownLatch latch = new CountDownLatch(items);
