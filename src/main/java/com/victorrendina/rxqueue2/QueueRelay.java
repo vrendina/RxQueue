@@ -83,14 +83,18 @@ public class QueueRelay<T> extends Relay<T> {
 
     private QueueRelay(T... initialItems) {
         for (T item : initialItems) {
-            if (item == null) throw new NullPointerException("item == null");
+            if (item == null) {
+                throw new NullPointerException("item == null");
+            }
             queue.offer(item);
         }
     }
 
     @Override
     public void accept(T value) {
-        if (value == null) throw new NullPointerException("value == null");
+        if (value == null) {
+            throw new NullPointerException("value == null");
+        }
 
         queue.offer(value);
 

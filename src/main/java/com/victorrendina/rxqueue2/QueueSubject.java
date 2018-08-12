@@ -87,7 +87,9 @@ public class QueueSubject<T> extends Subject<T> {
 
     private QueueSubject(T... initialItems) {
         for (T item : initialItems) {
-            if (item == null) throw new NullPointerException("item == null");
+            if (item == null) {
+                throw new NullPointerException("item == null");
+            }
             queue.offer(item);
         }
     }

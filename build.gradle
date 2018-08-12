@@ -1,5 +1,6 @@
 apply plugin: "java"
 apply plugin: "jacoco"
+apply plugin: "checkstyle"
 
 group GROUP
 version VERSION_NAME
@@ -26,4 +27,11 @@ jacocoTestReport {
         html.enabled = true
         html.destination file("${buildDir}/reports/jacoco/report.html")
     }
+}
+
+checkstyle {
+    configFile file("checkstyle.xml")
+    ignoreFailures = false
+    maxWarnings = 0
+    maxErrors = 0
 }

@@ -29,6 +29,9 @@ import static org.mockito.Mockito.mock;
 
 class TestHelper {
 
+    private TestHelper() {
+    }
+
     /**
      * Mocks an Observer with the proper receiver type.
      *
@@ -93,7 +96,7 @@ class TestHelper {
      *
      * @return list of errors that the handler caught
      */
-    public static List<Throwable> trackPluginErrors() {
+    static List<Throwable> trackPluginErrors() {
         final List<Throwable> list = Collections.synchronizedList(new ArrayList<Throwable>());
 
         RxJavaPlugins.setErrorHandler(new Consumer<Throwable>() {
