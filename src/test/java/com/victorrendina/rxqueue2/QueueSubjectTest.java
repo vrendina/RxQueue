@@ -17,14 +17,18 @@ package com.victorrendina.rxqueue2;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.disposables.Disposables;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.observers.DefaultObserver;
 import io.reactivex.observers.TestObserver;
+import io.reactivex.plugins.RxJavaPlugins;
+import io.reactivex.schedulers.Schedulers;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -455,11 +459,97 @@ public class QueueSubjectTest {
     }
 
     @Test
+    public void onErrorNullPassesNullPointerException() {
+        final QueueSubject<Object> subject = QueueSubject.create();
+
+        Observer<Object> observer = TestHelper.mockObserver();
+        subject.subscribe(observer);
+        subject.onError(null);
+
+        verify(observer, times(1)).onError(any(NullPointerException.class));
+    }
+
+    @Test
+    public void onSubscribeDisposesIfComplete() {
+        QueueSubject<Object> subject = QueueSubject.create();
+        Disposable disposable = Disposables.empty();
+
+        subject.onSubscribe(disposable);
+        assertFalse(disposable.isDisposed());
+
+        subject.onComplete();
+
+        disposable = Disposables.empty();
+        subject.onSubscribe(disposable);
+        assertTrue(disposable.isDisposed());
+    }
+
+    @Test
+    public void onErrorAfterComplete() {
+        QueueSubject<Object> subject = QueueSubject.create();
+
+        subject.onComplete();
+
+        List<Throwable> errors = TestHelper.trackPluginErrors();
+        try {
+            subject.onError(new TestException());
+            assertEquals(1, errors.size());
+            assertTrue(errors.get(0) instanceof TestException);
+        } finally {
+            RxJavaPlugins.reset();
+        }
+    }
+
+    @Test
     public void nullConstructorArgumentThrowsException() {
         try {
             QueueSubject.createDefault(1, 2, null, 4);
         } catch (NullPointerException e) {
             assertEquals("item == null", e.getMessage());
+        }
+    }
+
+    @Test(timeout = 2500)
+    public void dataHandedOffWhenSubscriberChanges() {
+        final int items = 50;
+        final QueueSubject<Integer> subject = QueueSubject.create();
+        final CountDownLatch latch = new CountDownLatch(items);
+
+        final Thread emitter = new Thread() {
+            @Override
+            public void run() {
+                for (int i = 0; i < items; i++) {
+                    subject.onNext(i);
+                    try {
+                        Thread.sleep(5);
+                    } catch (Exception e) {
+                        fail();
+                    }
+                }
+            }
+        };
+        emitter.start();
+
+        for (int i = 0; i < items; i++) {
+            subject.observeOn(Schedulers.computation())
+                    .subscribe(new Consumer<Integer>() {
+                        @Override
+                        public void accept(Integer s) {
+                            latch.countDown();
+                        }
+                    });
+
+            try {
+                Thread.sleep(1);
+            } catch (Exception e) {
+                fail();
+            }
+        }
+
+        try {
+            latch.await();
+        } catch (Exception e) {
+            fail();
         }
     }
 

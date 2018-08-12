@@ -203,7 +203,7 @@ public class QueueRelayTest {
         }
     }
 
-    @Test
+    @Test(timeout = 2500)
     public void dataHandedOffWhenSubscriberChanges() {
         final int items = 50;
         final QueueRelay<Integer> relay = QueueRelay.create();
@@ -242,7 +242,6 @@ public class QueueRelayTest {
 
         try {
             latch.await();
-            assertEquals(0, latch.getCount());
         } catch (Exception e) {
             fail();
         }

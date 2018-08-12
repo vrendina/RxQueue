@@ -16,7 +16,11 @@ package com.victorrendina.rxqueue2;
 
 import io.reactivex.Observer;
 import io.reactivex.functions.Consumer;
+import io.reactivex.plugins.RxJavaPlugins;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -83,4 +87,23 @@ class TestHelper {
             }
         };
     }
+
+    /**
+     * Provide RxJava with an error handler to track undeliverable exceptions.
+     *
+     * @return list of errors that the handler caught
+     */
+    public static List<Throwable> trackPluginErrors() {
+        final List<Throwable> list = Collections.synchronizedList(new ArrayList<Throwable>());
+
+        RxJavaPlugins.setErrorHandler(new Consumer<Throwable>() {
+            @Override
+            public void accept(Throwable t) {
+                list.add(t);
+            }
+        });
+
+        return list;
+    }
+
 }
