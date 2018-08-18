@@ -20,6 +20,8 @@ stages:
     if: branch = master
 
 jobs:
+  allow_failures:
+    - script: gradle/deploy.sh
   include:
     - stage: build
       script: ./gradlew clean build
