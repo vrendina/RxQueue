@@ -14,17 +14,7 @@ install: true
 
 sudo: required
 
-stages:
-  - name: build
-  - name: deploy
-    if: branch = master
-
-jobs:
-  include:
-    - stage: build
-      script: ./gradlew clean build
-    - stage: deploy
-      script: gradle/deploy.sh
+script: gradle/build.sh
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
