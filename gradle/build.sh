@@ -18,10 +18,8 @@ elif [ "$TRAVIS_JDK_VERSION" != "$JDK" ]; then
   echo "Skipping deployment: wrong JDK. Expected '$JDK' but was '$TRAVIS_JDK_VERSION'."
 elif [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
   echo "Skipping deployment: was pull request."
-elif [ "$TRAVIS_BRANCH" != "$BRANCH" ]; then
-  echo "Skipping deployment: wrong branch. Expected '$BRANCH' but was '$TRAVIS_BRANCH'."
 else
-  # If we are on the correct branch and have a tag that starts with 'v' we need to deploy a release and update the javadoc
+  # If we have a tag that starts with 'v' we need to deploy a release and update the javadoc
   if [[ "$TRAVIS_TAG" == v* ]]; then
     echo "Deploying release for version ${TRAVIS_TAG}..."
     ./gradlew bintrayUpload -x test -Dsnapshot=false -Dbintray.user=${BINTRAY_USER} -Dbintray.key=${BINTRAY_KEY} -Dbuild.number=${TRAVIS_BUILD_NUMBER}
@@ -36,8 +34,11 @@ else
     git add .
     git commit -m "Latest javadoc for release ${TRAVIS_TAG} (build ${TRAVIS_BUILD_NUMBER})"
     git push origin gh-pages
-  else
+  # If we are on the correct branch but don't have a release tag deploy the snapshot
+  elif [ "$TRAVIS_BRANCH" == "$BRANCH" ]; then
     echo "Deploying snapshot for build ${TRAVIS_BUILD_NUMBER}..."
 #    ./gradlew artifactoryPublish -x test -Dsnapshot=true -Dbintray.user=${BINTRAY_USER} -Dbintray.key=${BINTRAY_KEY} -Dbuild.number=${TRAVIS_BUILD_NUMBER}
+  else
+    echo "Skipping deployment: ${TRAVIS_BRANCH} was not ${BRANCH} and tag was '${TRAVIS_TAG}'"
   fi
 fi
