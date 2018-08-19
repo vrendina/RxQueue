@@ -3,6 +3,7 @@ RxQueue
 
 [![Build Status](https://travis-ci.org/vrendina/RxQueue.svg?branch=master)](https://travis-ci.org/vrendina/RxQueue)
 [![codecov](https://codecov.io/gh/vrendina/RxQueue/branch/master/graph/badge.svg)](https://codecov.io/gh/vrendina/RxQueue)
+[![Bintray](https://img.shields.io/bintray/v/vrendina/maven/RxQueue.svg?maxAge=2592000)](https://bintray.com/vrendina/maven/RxQueue/_latestVersion)
 
  RxQueue contains [RxJava][rx] subject and [relay][relay] types that queue items if no observer is subscribed.
  Once a subscriber attaches, items in the queue will be drained to that subscriber unless the subscriber is 
@@ -61,14 +62,21 @@ Usage
 Download
 --------
 
-Maven: 
-```xml
-TODO
-```
+[![Bintray](https://img.shields.io/bintray/v/vrendina/maven/RxQueue.svg?maxAge=2592000)](https://bintray.com/vrendina/maven/RxQueue/_latestVersion)
 
 Gradle:
 ```groovy
-TODO
+implementation 'com.victorrendina:rxqueue2:2.x.y'
+```
+
+Maven: 
+```xml
+<dependency>
+  <groupId>com.victorrendina</groupId>
+  <artifactId>rxqueue2</artifactId>
+  <version>2.x.y</version>
+  <type>pom</type>
+</dependency>
 ```
 
 License
