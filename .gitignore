@@ -17,6 +17,8 @@ reports
 *.iws
 classes
 
+local.properties
+
 obj
 
 .DS_Store

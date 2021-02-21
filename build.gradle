@@ -1,18 +1,22 @@
-plugins {
-    id "com.jfrog.bintray" version "1.8.4"
-    id "com.jfrog.artifactory" version "4.7.5"
-}
-
 apply plugin: "java"
 apply plugin: "jacoco"
 apply plugin: "checkstyle"
-apply plugin: "maven-publish"
 
-group "com.victorrendina.rxqueue2"
-version VERSION_NAME + (Boolean.valueOf(System.getProperty("snapshot")) ? "-SNAPSHOT" : "")
+ext {
+    PUBLISH_GROUP_ID = 'com.victorrendina'
+    PUBLISH_VERSION = VERSION_NAME + (Boolean.valueOf(System.getProperty("snapshot")) ? "-SNAPSHOT" : "")
+    PUBLISH_ARTIFACT_ID = 'rxqueue2'
+}
+
+apply from: "${rootProject.projectDir}/publish.gradle"
 
 sourceCompatibility = JavaVersion.VERSION_1_6
 targetCompatibility = JavaVersion.VERSION_1_6
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
 
 repositories {
     mavenCentral()
@@ -40,107 +44,4 @@ checkstyle {
     ignoreFailures = false
     maxWarnings = 0
     maxErrors = 0
-}
-
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = "sources"
-    from sourceSets.main.allSource
-}
-
-javadoc.failOnError = false
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = "javadoc"
-    from javadoc.destinationDir
-}
-
-artifacts {
-    archives jar
-    archives sourcesJar
-    archives javadocJar
-}
-
-def pomConfig = {
-    licenses {
-        license {
-            name "The Apache Software License, Version 2.0"
-            url "http://www.apache.org/licenses/LICENSE-2.0.txt"
-            distribution "repo"
-        }
-    }
-    developers {
-        developer {
-            id "vrendina"
-            name "Victor Rendina"
-            email "vrendina@gmail.com"
-        }
-    }
-
-    scm {
-        url "https://github.com/vrendina/RxQueue"
-    }
-}
-
-publishing {
-    publications {
-        mavenPublication(MavenPublication) {
-            from components.java
-            artifact sourcesJar {
-                classifier "sources"
-            }
-            artifact javadocJar {
-                classifier "javadoc"
-            }
-            groupId 'com.victorrendina'
-            artifactId 'rxqueue2'
-            version version
-            pom.withXml {
-                def root = asNode()
-                root.appendNode('description', 'RxJava2 reactive queue type that buffers items when no subscribers are available')
-                root.appendNode('name', 'RxQueue')
-                root.appendNode('url', 'https://github.com/vrendina/RxQueue')
-                root.children().last() + pomConfig
-            }
-        }
-    }
-}
-
-bintray {
-    user = System.getProperty('bintray.user')
-    key = System.getProperty('bintray.key')
-    publications = ['mavenPublication']
-
-    def rver = version
-
-    pkg {
-        repo = 'maven'
-        name = 'RxQueue'
-        userOrg = 'vrendina'
-        licenses = ['Apache-2.0']
-        vcsUrl = 'https://github.com/vrendina/RxQueue.git'
-        version {
-            name = rver
-            released  = new Date()
-        }
-    }
-}
-
-artifactory {
-    contextUrl = 'http://oss.jfrog.org'
-    publish {
-        repository {
-            repoKey = 'oss-snapshot-local'
-            username = System.getProperty('bintray.user')
-            password = System.getProperty('bintray.key')
-        }
-        defaults {
-            publications('mavenPublication')
-            publishArtifacts = true
-            publishPom = true
-        }
-    }
-    resolve {
-        repoKey = 'jcenter'
-    }
-    clientConfig.info.setBuildNumber(System.getProperty('build.number'))
 }

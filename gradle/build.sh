@@ -21,19 +21,19 @@ elif [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
 else
   # If we have a tag that starts with 'v' we need to deploy a release and update the javadoc
   if [[ "$TRAVIS_TAG" == v* ]]; then
-    echo "Deploying release for version ${TRAVIS_TAG}..."
-    ./gradlew bintrayUpload -x test -Dsnapshot=false -Dbintray.user=${BINTRAY_USER} -Dbintray.key=${BINTRAY_KEY} -Dbuild.number=${TRAVIS_BUILD_NUMBER}
-
-    echo "Deploying javadoc for release ${TRAVIS_TAG}..."
-    git config --global user.email "travis@travis-ci.org"
-    git config --global user.name "travis-ci"
-    git clone --quiet --branch=gh-pages https://${GH_TOKEN}@github.com/vrendina/RxQueue.git gh-pages
-    cd gh-pages
-    rm -rf *
-    cp -Rf ${TRAVIS_BUILD_DIR}/build/docs/javadoc/* ./
-    git add .
-    git commit -m "Latest javadoc for release ${TRAVIS_TAG} (build ${TRAVIS_BUILD_NUMBER})"
-    git push origin gh-pages
+#    echo "Deploying release for version ${TRAVIS_TAG}..."
+#    ./gradlew bintrayUpload -x test -Dsnapshot=false -Dbintray.user=${BINTRAY_USER} -Dbintray.key=${BINTRAY_KEY} -Dbuild.number=${TRAVIS_BUILD_NUMBER}
+#
+#    echo "Deploying javadoc for release ${TRAVIS_TAG}..."
+#    git config --global user.email "travis@travis-ci.org"
+#    git config --global user.name "travis-ci"
+#    git clone --quiet --branch=gh-pages https://${GH_TOKEN}@github.com/vrendina/RxQueue.git gh-pages
+#    cd gh-pages
+#    rm -rf *
+#    cp -Rf ${TRAVIS_BUILD_DIR}/build/docs/javadoc/* ./
+#    git add .
+#    git commit -m "Latest javadoc for release ${TRAVIS_TAG} (build ${TRAVIS_BUILD_NUMBER})"
+#    git push origin gh-pages
   # If we are on the correct branch but don't have a release tag deploy the snapshot
   elif [ "$TRAVIS_BRANCH" == "$BRANCH" ]; then
     echo "Deploying snapshot for build ${TRAVIS_BUILD_NUMBER}..."
